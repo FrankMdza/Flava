@@ -1,0 +1,36 @@
+# Never commit credentials. Listed even though nothing here should produce them, because
+# an accidental `cp -r ~/.claude .` is exactly how these end up in a public repo.
+.credentials.json
+.claude.json
+*.pem
+*.key
+*.p12
+.env
+.env.*
+id_rsa
+id_ed25519
+*.pfx
+
+# Local state that Claude Code writes into ~/.claude and that must not travel between
+# machines: sessions, transcripts, caches, handoff notes.
+sessions/
+session-env/
+shell-snapshots/
+file-history/
+handoffs/
+projects/
+statsig/
+todos/
+history.jsonl
+*.jsonl
+
+# Byproducts
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Installer output
+.flava-backup-*/

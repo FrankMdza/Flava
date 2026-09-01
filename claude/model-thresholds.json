@@ -1,0 +1,17 @@
+{
+  "claude-opus-5":    { "window": null, "hifi": 32000, "compact": 150000, "dump": 400000 },
+  "claude-sonnet-5":  { "window": null, "hifi": 32000, "compact": 150000, "dump": 400000 },
+  "claude-fable-5":   { "window": null, "hifi": 32000, "compact": 150000, "dump": 400000 },
+  "claude-haiku-4-5": { "window": null, "hifi": 16000, "compact": 100000, "dump": 150000 },
+  "_default":         { "window": null, "hifi": 32000, "compact": 150000, "dump": 400000 },
+
+  "_provenance": {
+    "window":  "measured — Claude Code hands it over in the statusline payload (context_window.context_window_size). This is the EFFECTIVE window CC applies: it honors the [1m] suffix, the CLAUDE_CODE_MAX_CONTEXT_TOKENS override and the 200k clamp. null = take it from the payload; set an integer only to force a value.",
+    "hifi":    "measured but NOT specific to Claude 5 — NoLiMa (arXiv:2502.05167) measured 12 models and 11 of them lost more than 50% of their baseline at 32k on associative reasoning. The only Claude in that set is 3.5 Sonnet. For Opus 5 / Sonnet 5 / Fable 5 this is extrapolation, not measurement.",
+    "compact": "published — the default trigger for Anthropic's server-side compaction. It is the only published mark still current for the 5 family.",
+    "dump":    "derived — a heuristic at 40% of the window. No measurement behind it.",
+    "haiku":   "Haiku 4.5 carries its own marks because its window is 200k: the global 150k would land at 75% and leave no useful orange band."
+  },
+
+  "_note": "The marks are clipped to the effective window at render time, so a 400k dump over a 200k window does not break the bar."
+}

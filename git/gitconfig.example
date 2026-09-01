@@ -1,0 +1,61 @@
+# Copy the parts you want into ~/.gitconfig. Not installed automatically, because git
+# identity and credential helpers are per machine and getting them wrong is annoying to undo.
+#
+#   macOS:      git config --global credential.helper osxkeychain
+#   WSL:        git config --global credential.helper \
+#                 "/mnt/c/Program\\ Files/Git/mingw64/bin/git-credential-manager.exe"
+#   Linux:      git config --global credential.helper "cache --timeout=3600"
+
+[user]
+	name = Your Name
+	email = you@example.com
+
+[init]
+	defaultBranch = main
+
+[core]
+	# A global ignore file keeps editor and OS junk out of every repo without touching
+	# each repo's own .gitignore.
+	excludesFile = ~/.config/git/ignore
+	autocrlf = input
+
+[pull]
+	# Merge commits from a plain `git pull` are noise. Rebase, and stop when it is not
+	# a fast-forward so you decide what happens.
+	rebase = true
+	ff = only
+
+[push]
+	default = current
+	autoSetupRemote = true
+
+[fetch]
+	prune = true
+
+[rebase]
+	autoStash = true
+
+[diff]
+	# Detects moved-and-renamed files, which makes refactor diffs readable.
+	renames = copies
+	colorMoved = zebra
+
+[merge]
+	conflictstyle = zdiff3
+
+[rerere]
+	# Remembers how you resolved a conflict and replays it. Pays for itself on any
+	# long-running branch that gets rebased more than once.
+	enabled = true
+
+[log]
+	date = iso
+
+[alias]
+	st = status -sb
+	lg = log --oneline --graph --decorate -20
+	last = log -1 --stat
+	unstage = reset HEAD --
+	# Branches by most recent commit. The one command that answers "what was I doing".
+	recent = for-each-ref --sort=-committerdate --count=15 \
+		--format='%(committerdate:short) %(refname:short)' refs/heads/
