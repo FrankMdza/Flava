@@ -10,6 +10,13 @@ shlex.
 Anything that cannot be resolved statically (the executable name comes out of a
 substitution) is marked with the SUBST sentinel, and the guards treat it as
 "this could be my binary" — fail-closed.
+
+Heredoc bodies are data, not commands, and are removed before any of that happens. A
+document written with `cat > notes.md <<'EOF'` used to be parsed line by line as if it
+were a script, and prose blocked itself. Markdown backticks looked like command
+substitution, and the words after them looked like its arguments. With an unquoted `<<EOF`
+the shell really does expand $(…) and backticks inside the body, so those keep being
+scanned and the rest of the body is dropped.
 """
 
 import json
@@ -40,7 +47,7 @@ SHELLS = {"bash", "sh", "zsh", "dash", "ksh", "busybox"}
 _DURATION = re.compile(r"^[0-9]+(\.[0-9]+)?[smhd]?$")
 
 
-# --------------------------------------------------------------------- splitting
+# --------------------------------------------------------------------- scanning
 
 
 def _match_paren(text, start):
@@ -87,6 +94,225 @@ def _match_backtick(text, start):
     return text[start:], len(text)
 
 
+# --------------------------------------------------------------------- heredocs
+
+# What ends a bare heredoc delimiter word.
+_DELIM_END = set(" \t\n;&|<>()")
+
+
+def _heredoc_op(text, i):
+    """`i` points at the `<<` of a heredoc redirection.
+
+    Returns (delimiter, expand, dash, index_after_the_word), or None if what follows is
+    not a delimiter. `expand` is True only for a bare delimiter: `<<'EOF'`, `<<"EOF"` and
+    `<<\\EOF` all make the body literal.
+    """
+    n = len(text)
+    j = i + 2
+    dash = False
+    if j < n and text[j] == "-":
+        dash = True
+        j += 1
+    while j < n and text[j] in " \t":
+        j += 1
+
+    word = []
+    expand = True
+    while j < n:
+        ch = text[j]
+        if ch in ("'", '"'):
+            close = text.find(ch, j + 1)
+            if close == -1:
+                return None
+            expand = False
+            word.append(text[j + 1:close])
+            j = close + 1
+            continue
+        if ch == "\\" and j + 1 < n:
+            expand = False
+            word.append(text[j + 1])
+            j += 2
+            continue
+        if ch in _DELIM_END:
+            break
+        word.append(ch)
+        j += 1
+
+    delimiter = "".join(word)
+    return (delimiter, expand, dash, j) if delimiter else None
+
+
+def _substitutions(text):
+    """Inner text of every $(…) and `…` in a chunk with no quoting rules of its own."""
+    found = []
+    i = 0
+    n = len(text)
+    while i < n:
+        ch = text[i]
+        if ch == "\\" and i + 1 < n:
+            i += 2
+            continue
+        if ch == "$" and text.startswith("((", i + 1):
+            _, i = _match_paren(text, i + 2)  # arithmetic, not a command
+            continue
+        if ch == "$" and i + 1 < n and text[i + 1] == "(":
+            inner, i = _match_paren(text, i + 2)
+            found.append(inner)
+            continue
+        if ch == "`":
+            inner, i = _match_backtick(text, i + 1)
+            found.append(inner)
+            continue
+        i += 1
+    return found
+
+
+def _feeds_a_shell(line):
+    """True if the heredoc on this line ends up as stdin of a shell.
+
+    `bash <<EOF` and `cat <<EOF | bash` run the body as a script, so it is code and has
+    to be scanned. Only the last command of the line matters: that is the one the body
+    reaches.
+    """
+    segments = split_segments(line)
+    if not segments:
+        return False
+    argv = to_argv(segments[-1])
+    while argv:
+        head = argv[0]
+        if ENV_ASSIGN.match(head):
+            argv.pop(0)
+            continue
+        base = os.path.basename(head).lower()
+        if base in WRAPPERS:
+            argv.pop(0)
+            while argv and (argv[0].startswith("-") or _DURATION.match(argv[0])):
+                argv.pop(0)
+            continue
+        return base in SHELLS
+    return False
+
+
+def _consume_bodies(text, i, pending, sources, script):
+    """Skip the bodies of the heredocs opened on the line that just ended.
+
+    Bash matches the terminator against the whole line, so a line with anything else on
+    it does not close the body. An unterminated heredoc runs to the end of the input,
+    here as in bash: everything after it is data that never gets executed.
+    """
+    n = len(text)
+    for delimiter, expand, dash in pending:
+        body = []
+        while i < n:
+            eol = text.find("\n", i)
+            line = text[i:eol] if eol != -1 else text[i:]
+            candidate = line.lstrip("\t") if dash else line
+            if candidate.rstrip("\r") == delimiter:
+                i = n if eol == -1 else eol + 1
+                break
+            body.append(line)
+            if eol == -1:
+                i = n
+                break
+            i = eol + 1
+        if not body:
+            continue
+        if script:
+            sources.append("\n".join(body))
+        elif expand:
+            sources.extend(_substitutions("\n".join(body)))
+    return i
+
+
+def _strip_heredocs(raw, seen=None):
+    """Remove heredoc bodies from the line.
+
+    Returns the line without them, plus the substitutions found inside the bodies of
+    unquoted heredocs, which the shell does execute. `seen` collects (delimiter, expand)
+    for callers that only want to know what kind of heredoc was there.
+    """
+    if "<<" not in raw:
+        return raw, []
+
+    out = []
+    sources = []
+    pending = []
+    line_start = 0
+    quote = None
+    i = 0
+    n = len(raw)
+
+    while i < n:
+        ch = raw[i]
+
+        if quote:
+            if ch == "\\" and quote == '"' and i + 1 < n:
+                out.append(raw[i:i + 2])
+                i += 2
+                continue
+            out.append(ch)
+            if ch == quote:
+                quote = None
+            i += 1
+            continue
+
+        if ch == "\\" and i + 1 < n:
+            out.append(raw[i:i + 2])
+            i += 2
+            continue
+
+        if ch in ("'", '"'):
+            quote = ch
+            out.append(ch)
+            i += 1
+            continue
+
+        # `$(( 1 << 2 ))` is a left shift, not a heredoc. Copy arithmetic through whole.
+        if ch == "$" and raw.startswith("((", i + 1):
+            _, j = _match_paren(raw, i + 2)
+            out.append(raw[i:j])
+            i = j
+            continue
+
+        if ch == "<" and raw.startswith("<<", i) and not raw.startswith("<<<", i):
+            parsed = _heredoc_op(raw, i)
+            if parsed:
+                delimiter, expand, dash, j = parsed
+                pending.append((delimiter, expand, dash))
+                if seen is not None:
+                    seen.append((delimiter, expand))
+                out.append(" ")  # the redirection goes, the command around it stays
+                i = j
+                continue
+
+        if ch == "\n":
+            line = "".join(out[line_start:])
+            out.append("\n")
+            line_start = len(out)
+            i += 1
+            if pending:
+                i = _consume_bodies(raw, i, pending, sources, _feeds_a_shell(line))
+                pending = []
+            continue
+
+        out.append(ch)
+        i += 1
+
+    return "".join(out), sources
+
+
+def has_unquoted_heredoc(raw):
+    """True if the line opens a heredoc whose body the shell expands."""
+    if not isinstance(raw, str) or "<<" not in raw:
+        return False
+    seen = []
+    _strip_heredocs(raw, seen)
+    return any(expand for _, expand in seen)
+
+
+# --------------------------------------------------------------------- splitting
+
+
 def split_segments(raw):
     """Split the line into simple commands.
 
@@ -96,6 +322,8 @@ def split_segments(raw):
     """
     if not isinstance(raw, str) or not raw.strip():
         return []
+
+    raw, heredoc_sources = _strip_heredocs(raw)
 
     segments = []
     buf = []
@@ -183,6 +411,8 @@ def split_segments(raw):
         i += 1
 
     flush()
+    for source in heredoc_sources:
+        segments.extend(split_segments(source))
     return segments
 
 
@@ -312,5 +542,9 @@ def run(checker, payload=None, panic=None):
         sys.stderr.write("guard error (allowing by default): {0}\n".format(exc))
         sys.exit(0)
     if reason:
+        if has_unquoted_heredoc(bash_command(payload)):
+            reason += ("\nIf this came from the heredoc body: an unquoted <<EOF lets the shell "
+                       "expand $(...) and backticks inside it. Quote the delimiter, <<'EOF', "
+                       "and the body is left alone.")
         deny(reason)
     allow()

@@ -123,6 +123,17 @@ DENY = [
     ("curl to a slack webhook",                       bash("curl -X POST https://hooks.slack.com/services/T/B/X -d '{}'")),
     ("curl to chat.postMessage",                      bash("curl -d text=hi https://slack.com/api/chat.postMessage")),
     ("curl to files.upload",                          bash("curl -F file=@x https://slack.com/api/files.upload")),
+
+    # --- heredocs: the body is data, EXCEPT when a shell is the one reading it.
+    # Dropping heredoc bodies (see the false positives in ALLOW) must not open the door
+    # to piping a script in through stdin.
+    ("bash reads the body as a script",               bash("bash <<'EOF'\naws s3 rm s3://bucket/x\nEOF")),
+    ("sh reads the body as a script",                 bash("sh <<EOF\ngit push --force\nEOF")),
+    ("body piped into bash",                          bash("cat <<'EOF' | bash\naws s3 rm s3://bucket/x\nEOF")),
+    ("zsh with <<- and tab indent",                   bash("zsh <<-'EOF'\n\taws iam create-user --user-name x\n\tEOF")),
+    ("substitution inside an unquoted body",          bash("cat > n.md <<EOF\n$(aws s3 rm s3://bucket/x)\nEOF")),
+    ("real command after the terminator",             bash("cat > n.md <<'EOF'\nnotes\nEOF\naws s3 rm s3://bucket/x")),
+    ("force push after the terminator",               bash("cat > n.md <<'EOF'\nnotes\nEOF\ngit push --force")),
 ]
 
 # ------------------------------------------------------ cases that MUST still get through
@@ -185,6 +196,25 @@ ALLOW = [
     ("arithmetic with a subst inside",                bash('echo "$(( $(wc -c < f.md) / 4 )) tokens"')),
     ("arithmetic in an assignment",                   bash("N=$((5+3)); echo $N")),
     ("arithmetic inside xargs",                       bash('wc -c < f | xargs -I{} echo "{} (~$(( 400 / 4 )))"')),
+
+    # Regression: a heredoc body is a document, not a script. Writing markdown this way
+    # used to block itself — a backticked word parsed as command substitution, and the
+    # words after it as its arguments, which is where "'aws , never' blocked" came from
+    # on text containing neither. Three of these in one session, 2026-09-01.
+    ("heredoc: backticked word then comma",           bash("cat > n.md <<'EOF'\nThe provider is `agy`, never the local one.\nEOF")),
+    ("heredoc: prose naming the aws cli",             bash("cat > n.md <<'EOF'\nWe looked at the `aws` CLI, never used it.\nEOF")),
+    ("heredoc: fenced code block",                    bash("cat > n.md <<'EOF'\nRun it:\n\n```bash\npython3 frontier.py\n```\nEOF")),
+    ("heredoc: quotes a blocked command as text",     bash("cat > n.md <<'EOF'\nNote: `git push --force` is blocked.\nEOF")),
+    ("heredoc: prose naming aws configure",           bash("cat > n.md <<'EOF'\nThe hook denies aws configure outright.\nEOF")),
+    ("heredoc: markdown table with pipes",            bash("cat > n.md <<'EOF'\n| ticket | state |\n| 18 | open |\nEOF")),
+    ("heredoc: unquoted, $(date) in the body",        bash("cat > n.md <<EOF\nGenerated $(date)\nEOF")),
+    ("heredoc: <<- with tab indent",                  bash("cat <<-EOF\n\tthe `agy` one, never\n\tEOF")),
+    ("heredoc: tee",                                  bash("tee n.md <<'EOF'\nthe `agy` provider, never\nEOF")),
+    ("heredoc: python3 reads it",                     bash("python3 - <<'PY'\nprint('aws configure')\nPY")),
+    ("heredoc: unterminated (all data, as in bash)",  bash("cat <<'EOF'\nthe `agy` provider, never\n")),
+    ("heredoc: bash reading only reads",              bash("bash <<'EOF'\ngit status\naws s3 ls\nEOF")),
+    ("here-string is not a heredoc",                  bash("grep aws <<< 'nothing here'")),
+    ("left shift is not a heredoc",                   bash('echo "$(( 1 << 4 )) and $(( 2 << 3 ))"')),
 ]
 
 
