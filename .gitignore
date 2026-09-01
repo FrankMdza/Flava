@@ -11,6 +11,20 @@ id_rsa
 id_ed25519
 *.pfx
 
+# Anything with KEY / TOKEN / SECRET in the name, any case. A shell rc that exports an
+# API key gets pulled in the moment someone copies ~/.zshrc here; this blocks the file
+# before that happens.
+*[Kk][Ee][Yy]*
+*[Tt][Oo][Kk][Ee][Nn]*
+*[Ss][Ee][Cc][Rr][Ee][Tt]*
+.zshrc
+.bashrc
+.bash_profile
+.zprofile
+.profile
+.zshenv
+.zlogin
+
 # Local state that Claude Code writes into ~/.claude and that must not travel between
 # machines: sessions, transcripts, caches, handoff notes.
 sessions/

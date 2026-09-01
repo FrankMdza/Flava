@@ -4,7 +4,7 @@
 #   ./install.sh                 symlink everything, install missing packages
 #   ./install.sh --copy          copy instead of symlink (files stop tracking the repo)
 #   ./install.sh --no-deps       skip the package manager entirely
-#   ./install.sh --only claude   install one component: claude, shell, fastfetch, wezterm
+#   ./install.sh --only claude   one component: claude, shell, fastfetch, wezterm, ghostty
 #   ./install.sh --dry-run       print what would happen, change nothing
 #
 # Idempotent: re-running it is safe. Anything it would overwrite gets moved to
@@ -289,6 +289,19 @@ install_wezterm() {
   install_path "$FLAVA_DIR/wezterm/wezterm.lua" "$HOME/.wezterm.lua"
 }
 
+# -------------------------------------------------------------------------- ghostty
+
+install_ghostty() {
+  say "Ghostty"
+  # Ghostty replaces WezTerm on macOS. It reads ~/.config/ghostty/config. No plugin
+  # system, so the resurrect keybindings are gone; the config comments say what replaced
+  # them. Installed even without the app present, same as the wezterm step.
+  if ! command -v ghostty >/dev/null 2>&1 && [ ! -d "/Applications/Ghostty.app" ]; then
+    warn "ghostty not found; installing the config anyway"
+  fi
+  install_path "$FLAVA_DIR/ghostty/config" "$HOME/.config/ghostty/config"
+}
+
 # --------------------------------------------------------------------------- verify
 
 verify() {
@@ -330,6 +343,7 @@ wants claude    && install_claude
 wants fastfetch && { install_fastfetch; install_pokemon; }
 wants shell     && { install_shell; install_pokemon; }
 wants wezterm   && install_wezterm
+wants ghostty   && install_ghostty
 [ -z "$ONLY" ] && verify
 
 echo
