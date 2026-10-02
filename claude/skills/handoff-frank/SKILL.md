@@ -1,6 +1,6 @@
 ---
 name: handoff-frank
-description: Write a handoff document that closes the current session and continues the same task in a clean one without losing fidelity. Use it when context approaches the compaction or dump zone, or when the user says "handoff", "write the handoff", "let's prep the clear", "I'm running out of context", "I'm going to /clear", "wrap up so we can continue in another session", or asks to continue the work in a new session. Use it ALSO from the other side, to resume: when they say "pick up from the last handoff", "resume the task", "continue where we left off", or give the path of a file in ~/.claude/handoffs/. Also to update an existing handoff for the same task.
+description: Write a handoff document that closes the current session and continues the same task in a clean one without losing fidelity. Use it when context approaches the compaction or dump zone, or when the user says "handoff", "write the handoff", "let's prep the clear", "I'm running out of context", "I'm going to /clear", "wrap up so we can continue in another session", or asks to continue the work in a new session. Use it ALSO from the other side, to resume, when they say "pick up from the last handoff", "resume the task", "continue where we left off", or give the path of a file in ~/.claude/handoffs/. Also to update an existing handoff for the same task.
 ---
 
 # Handoff

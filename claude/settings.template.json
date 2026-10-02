@@ -6,7 +6,7 @@
       "Bash(aws configure set:*)"
     ]
   },
-  "model": "opus[1m]",
+  "model": "opus",
   "hooks": {
     "UserPromptSubmit": [
       {
@@ -61,6 +61,11 @@
     }
   },
   "effortLevel": "xhigh",
+  "modelSettings": {
+    "claude-fable-5-1": {
+      "effortLevel": "high"
+    }
+  },
   "tui": "fullscreen",
   "theme": "auto",
   "enabledPlugins": {

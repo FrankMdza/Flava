@@ -84,6 +84,7 @@ because the mistake is the lesson.
 |---|---|
 | `unslop` | Cuts AI tells from any writing. Wired into `CLAUDE.md` so it applies to everything, not just editing tasks. |
 | `handoff-frank` | Writes a handoff so a clean session continues the task. Enforces a 4k budget and verifies with a clean-window subagent, because you cannot verify your own handoff. |
+| `rust-writing` | Rules for idiomatic Rust, each with its source, plus nine reference files on errors, types, async, unsafe, tests, performance, dependencies and tooling. Written in Spanish. |
 | `daily-agile-planner` | Pulls Jira and Google Calendar, ranks the work, and lays out a schedule measured from the moment you run it rather than from an imaginary 9am. |
 | `claude-handoff`, `implement-spec`, `loop-me`, `retro`, `setup-ts-deep-modules`, `writing-beats`, `writing-fragments`, `writing-shape` | Local copies from [mattpocock/skills](https://github.com/mattpocock/skills), MIT licensed. `settings.template.json` also enables that marketplace, so you can drop these and take the upstream versions instead. |
 
