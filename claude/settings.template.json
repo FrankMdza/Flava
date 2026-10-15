@@ -69,6 +69,7 @@
   "tui": "fullscreen",
   "theme": "auto",
   "enabledPlugins": {
-    "mattpocock-skills@mattpocock": true
+    "mattpocock-skills@mattpocock": true,
+    "rust-analyzer-lsp@claude-plugins-official": true
   }
 }
