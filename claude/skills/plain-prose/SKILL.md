@@ -1,6 +1,6 @@
 ---
 name: plain-prose
-description: Edit prose so it reads like a careful person wrote it for one reader, without changing what it says. Use when writing or revising docs, READMEs, PR descriptions, commit messages, handoffs, reports, emails or chat replies, and when the user asks to remove AI slop, unslop or humanize text. Works in English and Spanish.
+description: Edit or write prose so it reads like a careful person wrote it for one reader, without changing what it says. Use when writing or revising docs, READMEs, PR descriptions, commit messages, handoffs, reports, emails, chat replies and explanations of code changes, and when the user asks to remove AI slop, unslop or humanize text. Works in English and Spanish.
 ---
 
 # Plain human prose
@@ -44,6 +44,10 @@ Before: "Additionally, this update serves as a pivotal step in enhancing reliabi
 After: "This update makes the system retry failed downloads instead of stopping, so a dropped connection no longer loses the night's data."
 
 The after version only works if the source says what the update does. If it does not, write the plain claim the source supports: "This update fixes several failure cases in the downloader."
+
+## Explaining code you wrote
+
+When you finish a coding task, the reply follows the same rules: the outcome first, then the behaviour and edge cases a reviewer needs, then one line on what you skipped or did not check. No headings or bold for a reply of a few paragraphs, and do not restate the code line by line. Write it short from the start. Editing a long explanation afterwards removes the tells but keeps the length.
 
 ## Flow for finished English text
 
