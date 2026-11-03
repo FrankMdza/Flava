@@ -82,14 +82,16 @@ because the mistake is the lesson.
 
 | Skill | What it does |
 |---|---|
-| `unslop` | Cuts AI tells from any writing. Wired into `CLAUDE.md` so it applies to everything, not just editing tasks. |
+| `plain-prose` | Edits and writes prose so it reads like a careful person wrote it, without changing what it says. Wired into `CLAUDE.md` so it applies to everything. It replaced `unslop` on 2026-11-03 after five rounds of blind ranking by five judges from three model families: ranked level with the best variants, kept the most facts and invented nothing of substance. Bench and results live in `~/unslop-lab` on the main Mac, which is not in this repo. |
+| `ponytail` | Smallest change that fully solves a coding task, and a short reply. Auto-triggers on coding work. Pinned copy of DietrichGebert/ponytail, MIT, see `ORIGIN.txt`. |
+| `unslop` | The previous standing rule, kept for reference. Its "Adding soul" section makes the model invent opinions and facts: 201 invented-content flags in round 5, against 2 for `plain-prose`. Not loaded by default. |
 | `handoff-frank` | Writes a handoff so a clean session continues the task. Enforces a 4k budget and verifies with a clean-window subagent, because you cannot verify your own handoff. |
 | `rust-writing` | Rules for idiomatic Rust, each with its source, plus nine reference files on errors, types, async, unsafe, tests, performance, dependencies and tooling. Written in Spanish. |
 | `daily-agile-planner` | Pulls Jira and Google Calendar, ranks the work, and lays out a schedule measured from the moment you run it rather than from an imaginary 9am. |
 | `claude-handoff`, `implement-spec`, `loop-me`, `retro`, `setup-ts-deep-modules`, `writing-beats`, `writing-fragments`, `writing-shape` | Local copies from [mattpocock/skills](https://github.com/mattpocock/skills), MIT licensed. `settings.template.json` also enables that marketplace, so you can drop these and take the upstream versions instead. |
 
-**`CLAUDE.md`** makes `unslop` a standing rule and sets how it interacts with a repo's own
-conventions: unslop wins on prose, the repo wins on structure and on any literal string a
+**`CLAUDE.md`** makes `plain-prose` a standing rule and sets how it interacts with a repo's own
+conventions: plain-prose wins on prose, the repo wins on structure and on any literal string a
 tool parses.
 
 ### `shell/common.sh`

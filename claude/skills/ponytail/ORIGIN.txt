@@ -1,0 +1,1 @@
+pinned DietrichGebert/ponytail@96608e0 (2026-10-29), SKILL.md only, MIT
